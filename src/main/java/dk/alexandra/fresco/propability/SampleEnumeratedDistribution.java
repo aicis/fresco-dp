@@ -15,33 +15,46 @@ import java.util.List;
 public class SampleEnumeratedDistribution implements Computation<SInt, ProtocolBuilderNumeric> {
 
   private List<DRes<SReal>> propabilities;
+  private boolean normalized;
 
-  public SampleEnumeratedDistribution(List<DRes<SReal>> propabilities) {
+  /**
+   * 
+   * @param propabilities The i'th element of this list is the propabily of drawing i from this
+   *        distribution.
+   * @param normalized Does the propabilities sum to 1?
+   */
+  public SampleEnumeratedDistribution(List<DRes<SReal>> propabilities, boolean normalized) {
     this.propabilities = propabilities;
+    this.normalized = normalized;
   }
-  
+
   @Override
   public DRes<SInt> buildComputation(ProtocolBuilderNumeric builder) {
-      
-      /*
-       * Let p_0,...,p_{n-1} be the propabilities of drawing 0, ..., n-1 resp.
-       * 
-       * Now sample r uniformly in [0,1). Let c_i = p_0 + ... + p_i and let 
-       * t_i = 0 if c_i <= r and t_i = 1 otherwise. 
-       * 
-       * We return Sum_{i=0}^n t_i which will be i with propability p_i
-       */
-      
-      DRes<SReal> r = builder.realAdvanced().random(builder.getRealNumericContext().getPrecision());
 
-      DRes<SReal> c = builder.realNumeric().known(BigDecimal.ZERO);
-      List<DRes<SInt>> terms = new ArrayList<>();
-      
-      for (int i = 0; i < propabilities.size(); i++) {
-        c = builder.realNumeric().add(c, propabilities.get(i));
-        terms.add(builder.realNumeric().leq(c, r));
-      }
-      return builder.advancedNumeric().sum(terms);
+    /*
+     * Let p_0,...,p_{n-1} be the propabilities of drawing 0, ..., n-1 resp.
+     * 
+     * Now sample r uniformly in [0,1). Let c_i = p_0 + ... + p_i and let t_i = 0 if c_i <= r and
+     * t_i = 1 otherwise.
+     * 
+     * We return Sum_{i=0}^n t_i which will be i with propability p_i
+     */
+
+    DRes<SReal> r = builder.realAdvanced().random(builder.getRealNumericContext().getPrecision());
+
+    if (!normalized) {
+      DRes<SReal> sum = builder.realAdvanced().sum(propabilities);
+      r = builder.realNumeric().mult(sum, r);
+    }
+
+    DRes<SReal> c = builder.realNumeric().known(BigDecimal.ZERO);
+    List<DRes<SInt>> terms = new ArrayList<>();
+
+    for (int i = 0; i < propabilities.size(); i++) {
+      c = builder.realNumeric().add(c, propabilities.get(i));
+      terms.add(builder.realNumeric().leq(c, r));
+    }
+    return builder.advancedNumeric().sum(terms);
   }
 
 }

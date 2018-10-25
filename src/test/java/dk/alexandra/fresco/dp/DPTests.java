@@ -28,13 +28,12 @@ import org.apache.commons.math3.stat.inference.KolmogorovSmirnovTest;
 
 public class DPTests {
 
-
   public static class TestEnumeratedDistribution<ResourcePoolT extends ResourcePool>
       extends TestThreadFactory<ResourcePoolT, ProtocolBuilderNumeric> {
 
     @Override
     public TestThread<ResourcePoolT, ProtocolBuilderNumeric> next() {
-      return new TestThread<ResourcePoolT, ProtocolBuilderNumeric>() {
+      return new TestThread<>() {
 
         int tests = 200;
 
@@ -52,7 +51,7 @@ public class DPTests {
 
             List<DRes<SInt>> results = new ArrayList<>();
             for (int k = 0; k < tests; k++) {
-              results.add(producer.seq(new SampleEnumeratedDistribution(secretPropabilities)));
+              results.add(producer.seq(new SampleEnumeratedDistribution(secretPropabilities, true)));
             }
             List<DRes<BigInteger>> opened =
                 results.stream().map(producer.numeric()::open).collect(Collectors.toList());
@@ -92,7 +91,7 @@ public class DPTests {
 
     @Override
     public TestThread<ResourcePoolT, ProtocolBuilderNumeric> next() {
-      return new TestThread<ResourcePoolT, ProtocolBuilderNumeric>() {
+      return new TestThread<>() {
 
         int tests = 200;
         double epsilon = 3.0;
@@ -163,7 +162,7 @@ public class DPTests {
 
     @Override
     public TestThread<ResourcePoolT, ProtocolBuilderNumeric> next() {
-      return new TestThread<ResourcePoolT, ProtocolBuilderNumeric>() {
+      return new TestThread<>() {
 
         int tests = 200;
         BigDecimal b = BigDecimal.ONE;

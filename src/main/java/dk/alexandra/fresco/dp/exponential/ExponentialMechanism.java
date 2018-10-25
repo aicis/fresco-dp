@@ -3,7 +3,6 @@ package dk.alexandra.fresco.dp.exponential;
 import dk.alexandra.fresco.framework.DRes;
 import dk.alexandra.fresco.framework.builder.Computation;
 import dk.alexandra.fresco.framework.builder.numeric.ProtocolBuilderNumeric;
-import dk.alexandra.fresco.framework.util.Pair;
 import dk.alexandra.fresco.framework.value.SInt;
 import dk.alexandra.fresco.lib.real.SReal;
 import dk.alexandra.fresco.propability.SampleEnumeratedDistribution;
@@ -33,14 +32,7 @@ public class ExponentialMechanism implements Computation<SInt, ProtocolBuilderNu
           scores.stream().map(s -> r2.seq(computeExponent(s))).collect(Collectors.toList());
       return () -> propabilities;
     }).seq((r3, propabilities) -> {
-      DRes<SReal> sum = r3.realAdvanced().sum(propabilities);
-      return () -> new Pair<>(propabilities, sum);
-    }).par((r4, pair) -> {
-      List<DRes<SReal>> pmf = pair.getFirst().stream()
-          .map(p -> r4.realNumeric().div(p, pair.getSecond())).collect(Collectors.toList());
-      return () -> pmf;
-    }).seq((r5, pmf) -> {
-      return r5.seq(new SampleEnumeratedDistribution(pmf));
+      return r3.seq(new SampleEnumeratedDistribution(propabilities, false));
     });
   }
 
