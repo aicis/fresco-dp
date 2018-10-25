@@ -14,6 +14,7 @@ public class LaplaceMechanism implements Computation<SReal, ProtocolBuilderNumer
   private BigDecimal epsilon;
 
   public LaplaceMechanism(DRes<SReal> input, BigDecimal epsilon, BigDecimal sensitivity) {
+    // TODO: We assume that the epsilon is known, but this will propably not always be the case.
     this.input = input;
     this.sensitivity = sensitivity;
     this.epsilon = epsilon;

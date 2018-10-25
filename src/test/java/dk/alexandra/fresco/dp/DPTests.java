@@ -35,7 +35,7 @@ public class DPTests {
     public TestThread<ResourcePoolT, ProtocolBuilderNumeric> next() {
       return new TestThread<>() {
 
-        int tests = 200;
+        int tests = 100;
 
         List<Double> propabilities = List.of(0.1, 0.2, 0.1, 0.6);
 
@@ -93,7 +93,7 @@ public class DPTests {
     public TestThread<ResourcePoolT, ProtocolBuilderNumeric> next() {
       return new TestThread<>() {
 
-        int tests = 200;
+        int tests = 100;
         double epsilon = 3.0;
         List<Double> scores = List.of(3.2, 0.2, 1.0, 0.6);
 
@@ -164,7 +164,7 @@ public class DPTests {
     public TestThread<ResourcePoolT, ProtocolBuilderNumeric> next() {
       return new TestThread<>() {
 
-        int tests = 200;
+        int tests = 100;
         BigDecimal b = BigDecimal.ONE;
 
         @Override

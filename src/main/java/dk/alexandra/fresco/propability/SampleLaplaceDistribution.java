@@ -9,6 +9,9 @@ import dk.alexandra.fresco.lib.real.SReal;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 
+/**
+ * This computation samples from a Laplace distribution with scale <i>b</i> and location equal to 0.
+ */
 public class SampleLaplaceDistribution implements Computation<SReal, ProtocolBuilderNumeric> {
 
   private DRes<SReal> b;
@@ -36,8 +39,7 @@ public class SampleLaplaceDistribution implements Computation<SReal, ProtocolBui
 
   private Computation<SReal, ProtocolBuilderNumeric> sampleExponentialDistribution() {
     return builder -> {
-      DRes<SReal> uniform =
-          builder.realAdvanced().random(builder.getRealNumericContext().getPrecision());
+      DRes<SReal> uniform = builder.seq(new SampleUniformDistribution());
       DRes<SReal> logUniform = builder.realAdvanced().log(uniform);
 
       if (bKnown != null) {
