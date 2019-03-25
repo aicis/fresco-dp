@@ -4,7 +4,7 @@ import dk.alexandra.fresco.framework.DRes;
 import dk.alexandra.fresco.framework.builder.Computation;
 import dk.alexandra.fresco.framework.builder.numeric.ProtocolBuilderNumeric;
 import dk.alexandra.fresco.lib.real.SReal;
-import dk.alexandra.fresco.propability.SampleLaplaceDistribution;
+import dk.alexandra.fresco.stat.sampling.SampleLaplaceDistribution;
 import java.math.BigDecimal;
 
 public class LaplaceMechanism implements Computation<SReal, ProtocolBuilderNumeric> {
@@ -14,7 +14,7 @@ public class LaplaceMechanism implements Computation<SReal, ProtocolBuilderNumer
   private BigDecimal epsilon;
 
   public LaplaceMechanism(DRes<SReal> input, BigDecimal epsilon, BigDecimal sensitivity) {
-    // TODO: We assume that the epsilon is known, but this will propably not always be the case.
+    // TODO: We assume that the epsilon is known, but this will maybe not always be the case.
     this.input = input;
     this.sensitivity = sensitivity;
     this.epsilon = epsilon;

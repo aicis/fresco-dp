@@ -5,7 +5,7 @@ import dk.alexandra.fresco.framework.builder.Computation;
 import dk.alexandra.fresco.framework.builder.numeric.ProtocolBuilderNumeric;
 import dk.alexandra.fresco.framework.value.SInt;
 import dk.alexandra.fresco.lib.real.SReal;
-import dk.alexandra.fresco.propability.SampleEnumeratedDistribution;
+import dk.alexandra.fresco.stat.sampling.SampleCatagoricalDistribution;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -34,14 +34,14 @@ public class ExponentialMechanism implements Computation<SInt, ProtocolBuilderNu
   public DRes<SInt> buildComputation(ProtocolBuilderNumeric builder) {
     return builder.par(r1 -> {
       List<DRes<SReal>> scores = IntStream.range(0, function.domainSize())
-          .mapToObj(t -> r1.seq(function.computeScore(t))).collect(Collectors.toList());
+          .mapToObj(t -> function.computeScore(t).buildComputation(r1)).collect(Collectors.toList());
       return () -> scores;
     }).par((r2, scores) -> {
       List<DRes<SReal>> propabilities =
-          scores.stream().map(s -> r2.seq(computeExponent(s))).collect(Collectors.toList());
+          scores.stream().map(s -> computeExponent(s).buildComputation(r2)).collect(Collectors.toList());
       return () -> propabilities;
     }).seq((r3, propabilities) -> {
-      return r3.seq(new SampleEnumeratedDistribution(propabilities, false));
+      return new SampleCatagoricalDistribution(propabilities, false).buildComputation(r3);
     });
   }
 

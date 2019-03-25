@@ -4,6 +4,7 @@ import static org.junit.Assert.assertTrue;
 
 import dk.alexandra.fresco.dp.exponential.ExponentialMechanism;
 import dk.alexandra.fresco.dp.exponential.ScoreFunction;
+import dk.alexandra.fresco.dp.stat.NoisyChiSquareTest;
 import dk.alexandra.fresco.framework.Application;
 import dk.alexandra.fresco.framework.DRes;
 import dk.alexandra.fresco.framework.TestThreadRunner.TestThread;
@@ -13,78 +14,18 @@ import dk.alexandra.fresco.framework.builder.numeric.ProtocolBuilderNumeric;
 import dk.alexandra.fresco.framework.sce.resources.ResourcePool;
 import dk.alexandra.fresco.framework.value.SInt;
 import dk.alexandra.fresco.lib.real.SReal;
-import dk.alexandra.fresco.propability.SampleEnumeratedDistribution;
-import dk.alexandra.fresco.propability.SampleLaplaceDistribution;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.function.DoubleUnaryOperator;
 import java.util.stream.Collectors;
-import org.apache.commons.math3.distribution.UniformRealDistribution;
+import org.apache.commons.math3.distribution.ChiSquaredDistribution;
 import org.apache.commons.math3.stat.inference.ChiSquareTest;
-import org.apache.commons.math3.stat.inference.KolmogorovSmirnovTest;
 
 public class DPTests {
 
-  public static class TestEnumeratedDistribution<ResourcePoolT extends ResourcePool>
-      extends TestThreadFactory<ResourcePoolT, ProtocolBuilderNumeric> {
 
-    @Override
-    public TestThread<ResourcePoolT, ProtocolBuilderNumeric> next() {
-      return new TestThread<>() {
-
-        int tests = 100;
-
-        List<Double> propabilities = List.of(0.1, 0.2, 0.1, 0.6);
-
-        @Override
-        public void test() throws Exception {
-
-
-          Application<List<BigInteger>, ProtocolBuilderNumeric> testApplication = producer -> {
-
-            List<DRes<SReal>> secretPropabilities = propabilities.stream()
-                .map(p -> producer.realNumeric().input(BigDecimal.valueOf(p), 1))
-                .collect(Collectors.toList());
-
-            List<DRes<SInt>> results = new ArrayList<>();
-            for (int k = 0; k < tests; k++) {
-              results.add(producer.seq(new SampleEnumeratedDistribution(secretPropabilities, true)));
-            }
-            List<DRes<BigInteger>> opened =
-                results.stream().map(producer.numeric()::open).collect(Collectors.toList());
-            return () -> opened.stream().map(DRes::out).collect(Collectors.toList());
-
-          };
-
-          List<BigInteger> output = runApplication(testApplication);
-
-          long[] observed = new long[propabilities.size()];
-          double[] expected = new double[propabilities.size()];
-          for (int i = 0; i < propabilities.size(); i++) {
-            final int k = i;
-            observed[i] = output.stream().filter(x -> x.intValue() == k).count();
-            expected[i] = propabilities.get(i) * tests;
-          }
-
-          System.out.println("===========================================");
-          System.out.println("Testing sampling from discrete distribution");
-          System.out.println("===========================================");
-          System.out.println("Observed: " + Arrays.toString(observed));
-          System.out.println("Expected: " + Arrays.toString(expected));
-
-          ChiSquareTest tester = new ChiSquareTest();
-          double p = tester.chiSquareTest(expected, observed);
-          System.out.println("p-value for χ² test: " + p);
-          System.out.println();
-          assertTrue(p > 0.05);
-
-        }
-      };
-    }
-  }
 
   public static class TestExponentialMechanism<ResourcePoolT extends ResourcePool>
       extends TestThreadFactory<ResourcePoolT, ProtocolBuilderNumeric> {
@@ -141,10 +82,10 @@ public class DPTests {
           System.out.println("=============================");
           System.out.println("Testing exponential mechanism");
           System.out.println("=============================");
-          
+
           List<BigInteger> output = runApplication(testApplication);
           System.out.println("Score function: " + scores);
-          
+
           long[] observed = new long[scores.size()];
           for (int i = 0; i < scores.size(); i++) {
             final int k = i;
@@ -157,54 +98,67 @@ public class DPTests {
     }
   }
 
-  public static class TestLaplaceDistribution<ResourcePoolT extends ResourcePool>
+  public static class TestNoisyChiSquareTest<ResourcePoolT extends ResourcePool>
       extends TestThreadFactory<ResourcePoolT, ProtocolBuilderNumeric> {
 
     @Override
     public TestThread<ResourcePoolT, ProtocolBuilderNumeric> next() {
       return new TestThread<>() {
 
-        int tests = 100;
-        BigDecimal b = BigDecimal.ONE;
+        double[] ps = new double[] {0.5752475247524753, 0.3415841584158416, 0.06831683168316832,
+            0.01485148514851485};
+        long[] ob = new long[] {7700, 4800, 850, 200};
+
+        int classes = ps.length;
+
+        double epsilon = 0.5;
+        double df = ob.length - 1;
+
+        List<BigDecimal> propabilities =
+            Arrays.stream(ps).mapToObj(x -> BigDecimal.valueOf(x)).collect(Collectors.toList());
+
+        List<BigInteger> observed =
+            Arrays.stream(ob).mapToObj(BigInteger::valueOf).collect(Collectors.toList());
+        int n = observed.stream().mapToInt(x -> x.intValue()).sum();
 
         @Override
         public void test() throws Exception {
 
-          Application<List<BigDecimal>, ProtocolBuilderNumeric> testApplication = producer -> {
+          Application<BigDecimal, ProtocolBuilderNumeric> testApplication = builder -> {
 
-            List<DRes<SReal>> results = new ArrayList<>();
-            for (int k = 0; k < tests; k++) {
-              results.add(producer.seq(new SampleLaplaceDistribution(b)));
-            }
-            List<DRes<BigDecimal>> opened =
-                results.stream().map(producer.realNumeric()::open).collect(Collectors.toList());
-            return () -> opened.stream().map(DRes::out).collect(Collectors.toList());
+            List<DRes<SReal>> p = propabilities.stream().map(x -> builder.realNumeric().input(x, 1))
+                .collect(Collectors.toList());
+            List<DRes<SInt>> o = observed.stream().map(x -> builder.numeric().input(x, 2))
+                .collect(Collectors.toList());
+            DRes<SReal> x =
+                builder.seq(new NoisyChiSquareTest(epsilon, o, BigInteger.valueOf(n), p));
+            return builder.realNumeric().open(x);
           };
 
-          List<BigDecimal> output = runApplication(testApplication);
+          BigDecimal output = runApplication(testApplication);
 
-          double[] data = output.stream().mapToDouble(x -> x.doubleValue()).toArray();
-          KolmogorovSmirnovTest tester = new KolmogorovSmirnovTest();
-
-          DoubleUnaryOperator f = x -> {
-            if (x < 0.0) {
-              return Math.exp(-x / b.doubleValue()) / 2.0;
-            } else {
-              return 1.0 - Math.exp(x / b.doubleValue()) / 2.0;
-            }
-          };
-
-          System.out.println("==========================================");
-          System.out.println("Testing sampling from Laplace distribution");
-          System.out.println("==========================================");
-          double[] transformed = Arrays.stream(data).map(f).toArray();
-          double p =
-              tester.kolmogorovSmirnovStatistic(new UniformRealDistribution(0.0, 1.0), transformed);
-
-          System.out.println("p-value for Kolmogorov-Smirnov test for goodness-of-fit: " + p);
-          System.out.println();
-          // Somewhat arbitrary limit, but it's just to check that we are not totally off
-          assertTrue(p > 0.05);
+          // Compare the test statistics with a χ² distribution. Note that the test statistics is
+          // NOT χ² distributed, but we use it as an approximation since the actual distribution is
+          // hard to calculate analytically.
+          ChiSquaredDistribution dist = new ChiSquaredDistribution(df);
+          double noisyP = 1.0 - dist.cumulativeProbability(output.doubleValue());
+          
+          // Calculate the p-value of the test without noise
+          double[] ex = new double[ob.length];
+          for (int i = 0; i < classes; i++) {
+            ex[i] = ps[i] * n;
+          }
+          ChiSquareTest actualTest = new ChiSquareTest();
+          double actualP = actualTest.chiSquareTest(ex, ob);
+          
+          System.out.println("===================================================");
+          System.out.println("Testing noisy χ² goodness of fit hypothesis testing");
+          System.out.println("===================================================");
+          System.out.println("Actual p-value = " + actualP);
+          System.out.println("Noisy p-value = " + noisyP);
+          System.out.println("");
+          
+          assertTrue(noisyP < 0.05 == actualP < 0.05);
         }
       };
     }

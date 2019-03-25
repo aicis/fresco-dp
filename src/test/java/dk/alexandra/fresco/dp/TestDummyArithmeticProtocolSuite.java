@@ -5,11 +5,6 @@ import dk.alexandra.fresco.suite.dummy.arithmetic.AbstractDummyArithmeticTest;
 import org.junit.Test;
 
 public class TestDummyArithmeticProtocolSuite extends AbstractDummyArithmeticTest {
-
-  @Test
-  public void test_enumerated_distribution() throws Exception {
-    runTest(new DPTests.TestEnumeratedDistribution<>(), EvaluationStrategy.SEQUENTIAL, 2);
-  }
   
   @Test
   public void test_exponential_mechanism() throws Exception {
@@ -17,8 +12,9 @@ public class TestDummyArithmeticProtocolSuite extends AbstractDummyArithmeticTes
   }
   
   @Test
-  public void test_laplace_distribution() throws Exception {
-    runTest(new DPTests.TestLaplaceDistribution<>(), EvaluationStrategy.SEQUENTIAL, 2);
+  public void test_chi_square_test() throws Exception {
+    runTest(new DPTests.TestNoisyChiSquareTest<>(), EvaluationStrategy.SEQUENTIAL, 2);
   }
+
 
 }
